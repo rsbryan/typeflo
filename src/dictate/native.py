@@ -165,11 +165,21 @@ class OverlayTarget(NSObject):
 
 
 class Overlay:
+    WIDTH = 240
+    HEIGHT = 36
+    BAR_X = 14
+    BAR_SPACING = 5
+    BAR_WIDTH = 3
+    BAR_MIN = 4
+    BAR_MAX = 16
+    BUTTON = 26
+
     def __init__(self, action):
         self.target = OverlayTarget.alloc().init()
         self.target.action = action
+        rect = NSMakeRect(0, 0, self.WIDTH, self.HEIGHT)
         self.panel = AK.NSPanel.alloc().initWithContentRect_styleMask_backing_defer_(
-            NSMakeRect(0, 0, 290, 54), AK.NSWindowStyleMaskBorderless | AK.NSWindowStyleMaskNonactivatingPanel,
+            rect, AK.NSWindowStyleMaskBorderless | AK.NSWindowStyleMaskNonactivatingPanel,
             AK.NSBackingStoreBuffered, False)
         self.panel.setLevel_(AK.NSFloatingWindowLevel)
         self.panel.setCollectionBehavior_(AK.NSWindowCollectionBehaviorCanJoinAllSpaces | AK.NSWindowCollectionBehaviorFullScreenAuxiliary)
@@ -177,33 +187,39 @@ class Overlay:
         self.panel.setBackgroundColor_(AK.NSColor.clearColor())
         self.panel.setHasShadow_(True)
         self.panel.setHidesOnDeactivate_(False)
-        view = AK.NSView.alloc().initWithFrame_(NSMakeRect(0, 0, 290, 54))
+        view = AK.NSView.alloc().initWithFrame_(rect)
         view.setWantsLayer_(True)
-        view.layer().setCornerRadius_(27)
+        view.layer().setCornerRadius_(self.HEIGHT / 2)
         view.layer().setBackgroundColor_(AK.NSColor.colorWithCalibratedRed_green_blue_alpha_(.13, .14, .14, .97).CGColor())
+        label_x = self.BAR_X + 4 * self.BAR_SPACING + 8
+        buttons_x = self.WIDTH - 2 * self.BUTTON - 6
         self.label = AK.NSTextField.labelWithString_("Listening")
-        self.label.setFrame_(NSMakeRect(53, 17, 142, 20))
-        self.label.setFont_(AK.NSFont.systemFontOfSize_weight_(13, AK.NSFontWeightMedium))
+        self.label.setFrame_(NSMakeRect(label_x, (self.HEIGHT - 16) / 2, buttons_x - label_x, 16))
+        self.label.setFont_(AK.NSFont.systemFontOfSize_weight_(12, AK.NSFontWeightMedium))
         self.label.setTextColor_(AK.NSColor.whiteColor())
         view.addSubview_(self.label)
         self.bars = []
         for i in range(4):
-            bar = AK.NSView.alloc().initWithFrame_(NSMakeRect(22 + i * 5, 22, 3, 10))
+            bar = AK.NSView.alloc().initWithFrame_(self._bar_frame(i, self.BAR_MIN))
             bar.setWantsLayer_(True)
-            bar.layer().setCornerRadius_(1.5)
+            bar.layer().setCornerRadius_(self.BAR_WIDTH / 2)
             bar.layer().setBackgroundColor_(AK.NSColor.colorWithCalibratedRed_green_blue_alpha_(.92, .62, .49, 1).CGColor())
             view.addSubview_(bar)
             self.bars.append(bar)
-        for title, x, selector in (("■", 208, "stop:"), ("×", 245, "cancel:")):
-            button = AK.NSButton.alloc().initWithFrame_(NSMakeRect(x, 11, 32, 32))
+        for index, (title, selector) in enumerate((("■", "stop:"), ("×", "cancel:"))):
+            button = AK.NSButton.alloc().initWithFrame_(NSMakeRect(
+                buttons_x + index * (self.BUTTON + 2), (self.HEIGHT - self.BUTTON) / 2, self.BUTTON, self.BUTTON))
             button.setTitle_(title)
             button.setBordered_(False)
-            button.setFont_(AK.NSFont.systemFontOfSize_(20))
+            button.setFont_(AK.NSFont.systemFontOfSize_(15))
             button.setContentTintColor_(AK.NSColor.whiteColor())
             button.setTarget_(self.target)
             button.setAction_(selector)
             view.addSubview_(button)
         self.panel.setContentView_(view)
+
+    def _bar_frame(self, index, height):
+        return NSMakeRect(self.BAR_X + index * self.BAR_SPACING, (self.HEIGHT - height) / 2, self.BAR_WIDTH, height)
 
     def update(self, state, level=0, enabled=True, locked=False):
         if not enabled or state not in {"recording", "processing", "cancelling"}:
@@ -212,12 +228,12 @@ class Overlay:
         point = AK.NSEvent.mouseLocation()
         screen = next((screen for screen in AK.NSScreen.screens() if AK.NSPointInRect(point, screen.frame())), AK.NSScreen.mainScreen())
         frame = screen.visibleFrame()
-        self.panel.setFrameOrigin_((frame.origin.x + (frame.size.width - 290) / 2, frame.origin.y + 20))
+        self.panel.setFrameOrigin_((frame.origin.x + (frame.size.width - self.WIDTH) / 2, frame.origin.y + 20))
         self.panel.orderFrontRegardless()
         self.label.setStringValue_(("Listening · hands-free" if locked else "Listening…") if state == "recording" else "Polishing your words…")
         for i, bar in enumerate(self.bars):
-            height = 5 + level * (22 - abs(i - 1.5) * 5)
-            bar.setFrame_(NSMakeRect(22 + i * 5, (54 - height) / 2, 3, height))
+            height = self.BAR_MIN + level * (self.BAR_MAX - self.BAR_MIN - abs(i - 1.5) * 3)
+            bar.setFrame_(self._bar_frame(i, height))
 
 
 def install_edit_menu():
