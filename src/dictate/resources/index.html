@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none';">
+<title>Typeflo</title>
+<link rel="stylesheet" href="app.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="brand"><svg class="brand-mark" viewBox="0 0 32 32" fill="none"><path d="M7 13v6m6-12v18m6-21v24m6-17v10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg><span>typeflo</span></div>
+  <div class="workspace"><span class="avatar">T</span><div><strong>Your workspace</strong><small>Personal · on this Mac</small></div><span class="tiny-chevron">⌄</span></div>
+  <nav id="navigation" aria-label="Main navigation"></nav>
+  <div class="sidebar-bottom">
+    <div class="local-note"><span class="local-dot"></span><span>Your words stay yours.<small>100% on-device</small></span></div>
+    <button class="nav-item" data-page="settings" id="settings-nav"></button>
+    <div class="app-version"><span class="avatar small">T</span><span>Typeflo for Mac<small>Version 0.2.0</small></span></div>
+  </div>
+</aside>
+<main>
+  <header class="topbar"><span id="page-label">Home</span><span class="status-pill" id="status-pill"><span class="local-dot"></span><span id="status-text">Loading models</span></span></header>
+  <div class="scroll-area" id="scroll-area"><div id="content"></div></div>
+</main>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<div id="modal-root"></div>
+</body>
+</html>

@@ -1,0 +1,9 @@
+.venv/
+.uv-cache/
+__pycache__/
+*.pyc
+.DS_Store
+artifacts/
+dist/
+build/
+src/dictate/resources/Typeflo.icns
