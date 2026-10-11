@@ -21,6 +21,7 @@ from .config import DATA_PATH, save_config, validate_config
 from .engine import Worker
 from .history import History
 from .hotkey import HoldHotkey, hotkey_label
+from .context import fit_to_context, read_context
 from .inject import Injector
 from .models import CATALOG, catalog
 from .native import Hub, Overlay, RESOURCES, install_edit_menu, launch_at_login, microphones, permissions, request_permission
@@ -239,9 +240,16 @@ class TypefloApp(rumps.App):
         self.deferred.append((perf_counter() + .2, lambda: self.paste_text(rows[0]["text"])))
 
     def paste_text(self, text):
+        front = AK.NSWorkspace.sharedWorkspace().frontmostApplication()
+        if front and front.processIdentifier() != os.getpid():
+            context = read_context(front.processIdentifier())
+            logging.info("context %s", "read" if context else "unavailable")
+            if context:
+                text = fit_to_context(text, *context, self.config.personal_dictionary)
         self.injector.paste(text)
         self.paste_finished_at = perf_counter()
         self.state = "processing"
+        return text
 
     def download_model(self, identifier):
         if self.download and self.download["active"]:
@@ -362,7 +370,7 @@ class TypefloApp(rumps.App):
                 result.timings["ui_wait_ms"] = round((paste_started - ready_at) * 1000, 2)
                 try:
                     if result.text:
-                        self.paste_text(result.text)
+                        result.text = self.paste_text(result.text)
                     else:
                         self.state = "idle"
                         self.toast("No speech detected. Try speaking a little closer to your microphone.")

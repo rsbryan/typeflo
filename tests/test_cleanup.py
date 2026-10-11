@@ -2,7 +2,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from dictate.cleanup import Cleaner, word_count
+from dictate.cleanup import Cleaner, added_words, rewrote, word_count
 
 
 class CleanupTests(unittest.TestCase):
@@ -10,6 +10,8 @@ class CleanupTests(unittest.TestCase):
         self.cleaner = Cleaner.__new__(Cleaner)
         self.cleaner.model = object()
         self.cleaner.system = "Edit only"
+        self.cleaner.dictionary = ("Sarah",)
+        self.cleaner.guard_words = True
         self.cleaner.prefix = [10, 20]
         self.cleaner.cache = [{"tokens": [10, 20]}]
         self.cleaner.tokenizer = SimpleNamespace(
@@ -65,3 +67,26 @@ class CleanupTests(unittest.TestCase):
         self.cleaner.tokenizer.apply_chat_template.return_value = [88, 30, 40]
         with self.assertRaisesRegex(ValueError, "system prefix"):
             self.run_clean()
+
+    def test_rewritten_output_is_not_inserted(self):
+        with self.assertLogs(level="WARNING"):
+            result, _ = self.run_clean(text="Let's meet at three tomorrow for lunch.")
+        self.assertEqual(result.status, "rewritten")
+        self.assertEqual(result.text, "Meet at two actually three tomorrow")
+
+    def test_formal_style_skips_word_guard(self):
+        self.cleaner.guard_words = False
+        result, _ = self.run_clean(text="We shall meet at three tomorrow.")
+        self.assertEqual(result.status, "cleaned")
+
+    def test_added_words(self):
+        self.assertEqual(added_words("meet at two actually three pm", "Meet at 3pm."), [])
+        self.assertEqual(added_words("i didnt say that", "I didn't say that."), [])
+        self.assertEqual(added_words("call sara now", "Call Sarah now.", ("Sarah",)), [])
+        self.assertEqual(added_words("send the notes to sarah", "Send the notes to Typeflo.", ("Typeflo",)), ["typeflo"])
+        self.assertEqual(added_words("we need to review the budget", "for a budget review"), ["for", "a"])
+
+    def test_rewrote(self):
+        self.assertEqual(rewrote("um so I think we should go", "So I think we should go."), "")
+        self.assertEqual(rewrote("hey can you send me the file by tomorrow", "Send file."), "dropped too many words")
+        self.assertEqual(rewrote("what is the capital of france", "The capital of France is Paris."), "added words")

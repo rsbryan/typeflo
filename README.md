@@ -33,6 +33,8 @@ If Accessibility shows as on but Typeflo still reports it missing, remove Typefl
 - **Cancel**: Escape while recording.
 - Closing the window keeps Typeflo running in the menu bar. Cmd-Q quits.
 
+Dictated text is fitted to where it lands: a word inserted mid-sentence stays lowercase with no trailing period, and spaces are added only where needed. Cleanup removes fillers and fixes punctuation but keeps your exact words; if the model rewords anything, Typeflo pastes the raw transcript instead.
+
 The window has history, insights with timings, a personal dictionary, snippets, writing styles, model switching, and settings. Settings live in `~/.config/typeflo/config.toml`; history and logs are in `~/Library/Application Support/Typeflo`.
 
 ## Update
